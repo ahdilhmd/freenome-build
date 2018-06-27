@@ -195,6 +195,12 @@ def start_test_database(
     _insert_test_data(
         repo_path=repo_path, host=host, port=port, dbname=project_name, dbuser=project_name)
 
+    # Inject test-db credentials into the env for easy integration
+    os.environ['PGHOST'] = host
+    os.environ['PGPORT'] = port
+    os.environ['PGUSER'] = project_name
+    os.environ['PGDATABASE'] = project_name
+
     # log the connection command
     connection_cmd = f"psql -h {host} -p {port} -U {project_name} {project_name}"
     logger.info(f"Database is up! You can connect by running:\n{connection_cmd}")
