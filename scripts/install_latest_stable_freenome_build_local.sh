@@ -34,6 +34,7 @@ if [[ $ANACONDA_INSTALLED -eq 0 ]]; then
     bash $(basename $MINICONDA_URL) -b -u -p $MINICONDA_INSTALL_PATH;
     # activate the base conda environment
     export PATH="$MINICONDA_INSTALL_PATH/bin:$PATH";
+    conda install anaconda-client --yes
 fi
 
 ACCOUNT_INSTRUCTIONS='Please head to https://anaconda.org and create an account. Then ask an admin to add you to the Freenome group. When have finished with this, press ENTER'

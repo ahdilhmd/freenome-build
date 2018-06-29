@@ -25,6 +25,7 @@ if [[ $ANACONDA_INSTALLED -eq 0 ]]; then
     bash $(basename $MINICONDA_URL) -b -u -p $MINICONDA_INSTALL_PATH;
     # activate the base conda environment
     export PATH="$MINICONDA_INSTALL_PATH/bin:$PATH";
+    conda install anaconda-client --yes
 fi
 
 # setup the condarc with the correct set of channels
