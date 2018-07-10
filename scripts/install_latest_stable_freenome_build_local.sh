@@ -46,7 +46,7 @@ else
     read -p "$ACCOUNT_INSTRUCTIONS"
 fi
 
-ANACONDA_TOKEN=$(anaconda auth --create --name $USER-admin-token8)
+ANACONDA_TOKEN=$(anaconda auth --create --name $USER-admin-token)
 
 # setup the condarc with the correct set of channels
 conda config --remove channels defaults || true
@@ -78,7 +78,7 @@ else
     echo "
 # Conda initialization
 export ANACONDA_TOKEN=$ANACONDA_TOKEN
-. ~/miniconda3/etc/profile.d/conda.sh
+. ~/miniconda/etc/profile.d/conda.sh
 conda activate
         " >> $RC_PATH
 fi
