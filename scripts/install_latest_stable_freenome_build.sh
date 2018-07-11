@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -e
-set -o nounset
 
 ANACONDA_TOKEN=$1
 if [ $(uname) = 'Linux' ]; then
