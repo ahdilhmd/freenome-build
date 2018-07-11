@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -e
-set -o nounset
 
 ANACONDA_TOKEN=$1
 if [ $(uname) = 'Linux' ]; then
@@ -25,6 +24,7 @@ if [[ $CONDA_INSTALLED -eq 0 ]]; then
     curl -sO $MINICONDA_URL;
     bash $(basename $MINICONDA_URL) -b -u -p $MINICONDA_INSTALL_PATH;
     # activate the base conda environment
+    export PATH="$MINICONDA_INSTALL_PATH/bin:$PATH";
     source "$MINICONDA_INSTALL_PATH/etc/profile.d/conda.sh";
     conda install anaconda-client --yes
 fi
