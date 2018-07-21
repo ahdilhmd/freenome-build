@@ -183,8 +183,9 @@ def start_test_database(
     # the database cluster needs some time to start, so try to connect periodically until we can
     _wait_for_db_cluster_to_start(host, port)
 
-    # setup-db
-    # we need to connect to the 'postgres' database to create a new database
+    setup_database(project_name, repo_path, host, port)
+
+def setup_database(project_name, repo_path, host, port):
     _setup_db(project_name, repo_path, host, port)
 
     # run-migrations
