@@ -45,7 +45,7 @@ def _setup_db(image_name, repo_path, host, port):
             )
 
     # execute the setup.sql script
-    run_and_log(f"psql -h {host} -p {port} -U postgres", input=setup_sql.encode())
+    run_and_log(f"psql -h {host} -p {port} -U postgres -d postgres", input=setup_sql.encode())
 
     return
 
@@ -144,6 +144,23 @@ def stop_test_database(project_name, host=DEFAULT_TEST_DB_HOST, port=DEFAULT_TES
     run_and_log(cmd)
 
 
+def configure_test_database(host, port, project_name, repo_path):
+    # the database cluster needs some time to start, so try to connect periodically until we can
+    _wait_for_db_cluster_to_start(host, port)
+
+    # setup-db
+    # we need to connect to the 'postgres' database to create a new database
+    _setup_db(project_name, repo_path, host, port)
+
+    # run-migrations
+    _run_migrations(
+        repo_path=repo_path, host=host, port=port, dbname=project_name, dbuser=project_name)
+
+    # insert test data
+    _insert_test_data(
+        repo_path=repo_path, host=host, port=port, dbname=project_name, dbuser=project_name)
+
+
 def start_test_database(
         repo_path, project_name, host=DEFAULT_TEST_DB_HOST, port=DEFAULT_TEST_DB_PORT):
     """Start a test database in a docker container.
@@ -180,20 +197,9 @@ def start_test_database(
     # starting-db
     cmd = f"docker run -d -p {port}:5432 --name {project_name}_{port} {project_name}:latest"
     run_and_log(cmd)
-    # the database cluster needs some time to start, so try to connect periodically until we can
-    _wait_for_db_cluster_to_start(host, port)
 
-    # setup-db
-    # we need to connect to the 'postgres' database to create a new database
-    _setup_db(project_name, repo_path, host, port)
-
-    # run-migrations
-    _run_migrations(
-        repo_path=repo_path, host=host, port=port, dbname=project_name, dbuser=project_name)
-
-    # insert test data
-    _insert_test_data(
-        repo_path=repo_path, host=host, port=port, dbname=project_name, dbuser=project_name)
+    # Set up the database, run migrations, insert test data
+    configure_test_database(host, port, project_name, repo_path)
 
     # Inject test-db credentials into the env for easy integration
     os.environ['PGHOST'] = host
