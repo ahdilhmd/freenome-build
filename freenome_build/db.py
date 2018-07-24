@@ -144,7 +144,7 @@ def stop_test_database(project_name, host=DEFAULT_TEST_DB_HOST, port=DEFAULT_TES
     run_and_log(cmd)
 
 
-def configure_test_db(host, port, project_name, repo_path):
+def configure_test_database(host, port, project_name, repo_path):
     # the database cluster needs some time to start, so try to connect periodically until we can
     _wait_for_db_cluster_to_start(host, port)
 
