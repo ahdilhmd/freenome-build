@@ -26,8 +26,8 @@ Running `freenome-build develop $REPO_PATH` sets up a development environment fo
 2) install the built packages' dependencies by running `conda install $PACKAGE --only-deps`
 3) install the package in python's develop mode by running `python $REPO_PATH/setup.py develop` 
 
-## freenome-build deploy -p $REPO_PATH
-Build the package in $REPO_PATH and upload to anaconda cloud.
+## freenome-build deploy -u -p $REPO_PATH
+Build the package in $REPO_PATH and upload to anaconda cloud. The -u flag asks freenome-build to upload to anaconda cloud in addition to packaging.
 
 
 ## Caveats, gotchas, and TODO's
