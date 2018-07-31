@@ -2,3 +2,9 @@
 *.swo
 *.swp
 .DS_Store
+__pycache__/
+
+dist/
+build/
+*.egg
+*.egg-info/
