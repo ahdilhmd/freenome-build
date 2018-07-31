@@ -4,6 +4,7 @@ import psycopg2
 import socket
 import subprocess
 import time
+from typing import Tuple
 from contextlib import closing
 
 from freenome_build.util import norm_abs_join_path, change_directory, get_git_repo_name, run_and_log
@@ -72,7 +73,7 @@ def _wait_for_db_cluster_to_start(host: str, port: int, max_wait_time=MAX_DB_WAI
     raise RuntimeError(f"Aborting because the DB did not start within {MAX_DB_WAIT_TIME} seconds.")
 
 
-def start_local_database(repo_path: str, project_name: str, port: int = None) -> None:
+def start_local_database(repo_path: str, project_name: str, port: int = None) -> Tuple[str, int]:
     """Start a test database in a docker container.
 
     This starts a new test database in a docker container. This function:
@@ -109,8 +110,8 @@ def start_local_database(repo_path: str, project_name: str, port: int = None) ->
         _setup_db(repo_path, 'localhost', port, project_name)
 
         # Try connecting to the new database
-        connection_cmd = f"psql -h localhost -p {port} -U {project_name} -d {project_name}"
-        logger.info(f"Database is up! You can connect by running:\n{connection_cmd}")
+        connection_str = f"host=localhost port={port} user={project_name} dbname={project_name}"
+        return connection_str, port
     except Exception:
         stop_local_database(project_name, port)
         raise
@@ -207,7 +208,15 @@ def stop_local_database(project_name: str, port: int) -> None:
 
 
 def start_local_database_main(args):
-    start_local_database(args.path, args.project_name, args.port)
+    connection_str, port = start_local_database(args.path, args.project_name, args.port)
+    logger.info(f"Successfully started a database. Use the following string to connect:\n{connection_str}")
+
+
+def start_local_test_database_main(args):
+    connection_str, port = start_local_database(args.path, args.project_name, args.port)
+    run_migrations(args.path, args.host, port, args.project_name, args.project_name)
+    insert_test_data(args.path, args.host, port, args.project_name, args.project_name)
+    logger.info(f"Successfully started a database. Use the following string to connect:\n{connection_str}")
 
 
 def run_migrations_main(args):
@@ -250,8 +259,11 @@ def add_db_subparser(subparsers):
     database_subparsers = database_parser.add_subparsers(dest='test_db_command')
     database_subparsers.required = True
 
-    # Start a test DB
-    database_subparsers.add_parser('start', help='start a test database')
+    # Start a DB
+    database_subparsers.add_parser('start', help='Start a database')
+
+    # Start a test DB, run migrations, insert the starting data
+    database_subparsers.add_parser('start_local_test_db', help='Start a database with all the default data')
 
     # Run the sqitch migrations on the database
     database_subparsers.add_parser('run_migrations', help='Run migrations on database schemas')
@@ -277,8 +289,10 @@ def db_main(args):
         args.project_name = get_git_repo_name(args.path).replace('-', '_')
         logger.info(f"Setting project name to '{args.project_name}'")
 
-    elif args.test_db_command == 'start':
+    if args.test_db_command == 'start':
         start_local_database_main(args)
+    elif args.test_db_command == 'start_local_test_db':
+        start_local_test_database_main(args)
     elif args.test_db_command == 'run_migrations':
         run_migrations_main(args)
     elif args.test_db_command == 'insert_test_data':
