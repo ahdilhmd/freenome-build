@@ -24,8 +24,8 @@ install:
 - sudo cpanm --quiet --notest App::Sqitch
 cache: pip
 script:
-- python3 -m flake8 pipeline
-#- python3 -m pytest -vv
+- python3 -m flake8 freenome_build
+- python3 -m pytest -vv
 branches:
   only:
   - master
