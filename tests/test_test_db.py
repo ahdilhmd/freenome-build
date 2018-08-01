@@ -24,7 +24,7 @@ def test_travis_db_cli():
     try:
         base_conn_string = "postgresql://postgres@localhost:5432"
         run_and_log(f"psql {base_conn_string}", input="CREATE DATABASE freenome_build WITH OWNER=postgres")
-        conn_string = f"{base_conn_string}/freenome-build"
+        conn_string = f"{base_conn_string}/freenome_build"
         connect_cmd = f"psql {conn_string}"
 
         migrations_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} run-migrations"
