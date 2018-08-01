@@ -1,0 +1,4 @@
+[
+  "tests/test_test_db.py::test_db_cli",
+  "tests/test_test_db.py::test_db_module_interface"
+]
