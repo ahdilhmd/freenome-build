@@ -72,7 +72,7 @@ def _find_free_port():
         return s.getsockname()[1]
 
 
-def _setup_db(conn_data: ConnectionData, repo_path: str) -> None:
+def setup_db(conn_data: ConnectionData, repo_path: str) -> None:
     # check if 'setup' exists in repo_path/database/
     repo_setup_sql_path = norm_abs_join_path(repo_path, "./database/setup.sql")
     if os.path.exists(repo_setup_sql_path):
@@ -92,6 +92,7 @@ def _setup_db(conn_data: ConnectionData, repo_path: str) -> None:
             )
     run_and_log(f"psql -h {conn_data.host} -p {conn_data.port} -U postgres -d postgres",
                 input=setup_sql.encode())
+    _run_migrations(conn_data, repo_path)
 
 
 def start_local_database(repo_path: str, project_name: str, port: int = None, password: str = None) -> ConnectionData:
@@ -137,13 +138,11 @@ def start_local_database(repo_path: str, project_name: str, port: int = None, pa
     _wait_for_db_cluster_to_start(host, port)
 
     conn_data = ConnectionData(host, port, dbname, user, password)
-    # Set up the database
-    _setup_db(conn_data, repo_path)
 
     return conn_data
 
 
-def run_migrations(conn_data: ConnectionData, repo_path: str) -> None:
+def _run_migrations(conn_data: ConnectionData, repo_path: str) -> None:
     # check if 'migrate' exists in repo_path/database/
     repo_migrate_path = norm_abs_join_path(repo_path, "./database/migrate")
     if os.path.exists(repo_migrate_path):
@@ -233,8 +232,8 @@ def reset_data(conn_data: ConnectionData, repo_path: str) -> None:
         # Drop the database
         run_and_log(f"psql -h {conn_data.host} -p {conn_data.port} -U postgres -d postgres",
                     input=f"drop database {conn_data.dbname}")
-        _setup_db(conn_data, repo_path)
-        run_migrations(conn_data, repo_path)
+        # Recreate the database and run migrations
+        setup_db(conn_data, repo_path)
 
 
 def stop_local_database(conn_data: ConnectionData) -> None:
@@ -268,16 +267,16 @@ def start_local_test_database_main(args):
         conn_data = start_local_database(args.path, args.conn_data.dbname, args.conn_data.port)
     else:
         conn_data = start_local_database(args.path, args.project_name, args.port)
-    run_migrations(conn_data, args.path)
+    setup_db(conn_data, args.path)
     insert_test_data(conn_data, args.path)
     logger.info(f"Successfully started a database. Use the following string to connect:")
     print(conn_data)
 
 
-def run_migrations_main(args):
+def setup_db_main(args):
     if not args.conn_data:
         args.conn_data = ConnectionData(args.host, args.port, args.project_name, args.project_name, args.password)
-    run_migrations(args.conn_data, args.path)
+    setup_db(args.conn_data, args.path)
 
 
 def insert_test_data_main(args):
@@ -337,7 +336,7 @@ def add_db_subparser(subparsers):
     database_subparsers.add_parser('start-local-test-db', help='Start a database with all the default data')
 
     # Run the sqitch migrations on the database
-    database_subparsers.add_parser('run-migrations', help='Run migrations on database schemas')
+    database_subparsers.add_parser('setup-db', help='Create database and run migrations on database schemas')
 
     # Insert test data into the database
     database_subparsers.add_parser('insert-test-data', help='Insert test data into the database')
@@ -369,8 +368,8 @@ def db_main(args):
         start_local_database_main(args)
     elif args.test_db_command == 'start-local-test-db':
         start_local_test_database_main(args)
-    elif args.test_db_command == 'run-migrations':
-        run_migrations_main(args)
+    elif args.test_db_command == 'setup-db':
+        setup_db_main(args)
     elif args.test_db_command == 'insert-test-data':
         insert_test_data_main(args)
     elif args.test_db_command == 'reset-data':

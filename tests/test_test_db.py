@@ -5,7 +5,7 @@ import pytest
 
 from freenome_build.db import (
     start_local_database,
-    run_migrations,
+    setup_db,
     insert_test_data,
     reset_data,
     stop_local_database
@@ -27,8 +27,8 @@ def test_travis_db_cli():
         conn_string = f"{base_conn_string}/freenome_build"
         connect_cmd = f"psql {conn_string}"
 
-        migrations_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} run-migrations"
-        subprocess.check_call(migrations_cmd, shell=True)
+        setup_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} setup-db"
+        subprocess.check_call(setup_cmd, shell=True)
 
         insert_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} insert-test-data"
         subprocess.check_output(insert_cmd, shell=True).decode().strip()
@@ -76,7 +76,7 @@ def test_docker_db_cli():
 
 def test_db_module_interface():
     conn_data = start_local_database(DB_DIR, 'freenome_build')
-    run_migrations(conn_data, DB_DIR)
+    setup_db(conn_data, DB_DIR)
     insert_test_data(conn_data, DB_DIR)
     reset_data(conn_data, DB_DIR)
     stop_local_database(conn_data)
