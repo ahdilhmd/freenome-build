@@ -5,5 +5,4 @@ conda-build
 conda-verify
 anaconda-client
 psycopg2
-google-cloud-storage
 portalocker
