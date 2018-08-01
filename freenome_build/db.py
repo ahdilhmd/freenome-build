@@ -259,7 +259,7 @@ def stop_local_database(conn_data: ConnectionData) -> None:
 
 def start_local_database_main(args):
     conn_data = start_local_database(args.path, args.project_name, args.port)
-    logger.info(f"Successfully started a database. Use the following string to connect:\n{conn_data}")
+    logger.info(f"Successfully started a database. Use the following string to connect:")
     print(conn_data)
 
 
@@ -270,7 +270,7 @@ def start_local_test_database_main(args):
         conn_data = start_local_database(args.path, args.project_name, args.port)
     run_migrations(conn_data, args.path)
     insert_test_data(conn_data, args.path)
-    logger.info(f"Successfully started a database. Use the following string to connect:\n{conn_data}")
+    logger.info(f"Successfully started a database. Use the following string to connect:")
     print(conn_data)
 
 
