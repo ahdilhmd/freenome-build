@@ -22,9 +22,7 @@ def test_travis_db_cli():
     initial_wd = os.getcwd()
     os.chdir(DB_DIR)
     try:
-        base_conn_string = "postgresql://postgres@localhost:5432"
-        run_and_log(f"psql {base_conn_string}", input="CREATE DATABASE freenome_build WITH OWNER=postgres")
-        conn_string = f"{base_conn_string}/freenome_build"
+        conn_string = "postgresql://freenome_build:password@localhost:5432/freenome_build"
         connect_cmd = f"psql {conn_string}"
 
         setup_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} setup-db"
