@@ -23,7 +23,7 @@ def test_travis_db_cli():
     os.chdir(DB_DIR)
     try:
         base_conn_string = "postgresql://postgres@localhost:5432"
-        run_and_log(f"psql {base_conn_string}", input="CREATE DATABASE freenome-build WITH OWNER=postgres")
+        run_and_log(f"psql {base_conn_string}", input="CREATE DATABASE freenome_build WITH OWNER=postgres")
         conn_string = f"{base_conn_string}/freenome-build"
         connect_cmd = f"psql {conn_string}"
 

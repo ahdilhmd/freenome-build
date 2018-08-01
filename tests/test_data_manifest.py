@@ -75,7 +75,7 @@ def _add_file_to_manifest_upload_to_gcs_and_verify_local_matches_remote():
         blob.delete()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_add_duplicate_key():
     # test that we get an error if we try to add this file again with the same key
     try:
@@ -95,7 +95,7 @@ def test_add_duplicate_key():
         reset_test_manifest()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_add_remote_missing_file():
     """Test adding a file that is not in GCS."""
     # by default _add_file_to_manifest_upload_to_gcs_and_verify_local_matches_remote adds a file
@@ -103,7 +103,7 @@ def test_add_remote_missing_file():
     _add_file_to_manifest_upload_to_gcs_and_verify_local_matches_remote()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_add_remote_present_file():
     """Test adding a file that does not exist in gcs."""
     # add the file and then ensure that adding to the manifest still works
@@ -114,7 +114,7 @@ def test_add_remote_present_file():
     _add_file_to_manifest_upload_to_gcs_and_verify_local_matches_remote()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_add_remote_mismatch_file():
     """Test adding a file that exists in gcs but does not match the file being added."""
     # add a mismatched file and ensure that we get an error
@@ -129,7 +129,7 @@ def test_add_remote_mismatch_file():
         assert False, "This should have failed due to a file mismatch."
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_locking_works():
     """Make sure that we get an error if two people try to modify the same process."""
     manifest_fname = TEST_MANIFEST_FNAME
@@ -158,7 +158,7 @@ def test_locking_works():
         get_gcs_blob(DEFAULT_REMOTE_PREFIX, TEST_REMOTE_RELATIVE_PATH).delete()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_adding_two_files_works():
     try:
         test_data_fname = TEST_DATA_FILE
@@ -176,7 +176,7 @@ def test_adding_two_files_works():
         get_gcs_blob(DEFAULT_REMOTE_PREFIX, TEST_REMOTE_RELATIVE_PATH).delete()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_removing_file_works():
     try:
         print(f"Loading manifest: {TEST_MANIFEST_FNAME}")
@@ -196,7 +196,7 @@ def test_removing_file_works():
         get_gcs_blob(DEFAULT_REMOTE_PREFIX, TEST_REMOTE_RELATIVE_PATH).delete()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_sync():
     try:
         local_test_data_prefix = tempfile.mkdtemp()
@@ -212,7 +212,7 @@ def test_sync():
         get_gcs_blob(DEFAULT_REMOTE_PREFIX, TEST_REMOTE_RELATIVE_PATH).delete()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_sync_add_sync():
     try:
         local_test_data_prefix = tempfile.mkdtemp()
@@ -232,7 +232,7 @@ def test_sync_add_sync():
         get_gcs_blob(DEFAULT_REMOTE_PREFIX, TEST_REMOTE_RELATIVE_PATH).delete()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_verify_success():
     """test that verify works when everything matches."""
     try:
@@ -255,7 +255,7 @@ def test_verify_success():
         get_gcs_blob(DEFAULT_REMOTE_PREFIX, TEST_REMOTE_RELATIVE_PATH).delete()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_verify_size_fail():
     """test that verify failes when there is a size mismatch."""
     try:
@@ -279,7 +279,7 @@ def test_verify_size_fail():
         get_gcs_blob(DEFAULT_REMOTE_PREFIX, TEST_REMOTE_RELATIVE_PATH).delete()
 
 
-@pytest.mark.skip(reason='DataManifest no yet implemented')
+@pytest.mark.skip(reason='DataManifest not yet implemented')
 def test_verify_md5_fail():
     """test that verify failes when the sizes match but the md5sum's dont."""
     try:
