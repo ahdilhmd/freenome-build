@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+import pytest
+
 from freenome_build.db import (
     start_local_database,
     run_migrations,
@@ -8,11 +10,45 @@ from freenome_build.db import (
     reset_data,
     stop_local_database
 )
+from freenome_build.util import run_and_log
 
 DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "./skeleton_repo/"))
 
 
-def test_db_cli():
+@pytest.mark.skipif('TRAVIS' not in os.environ,
+                    reason="Test for travis where the database is created by the postgresql service")
+def test_travis_db_cli():
+    """Check that we can start, connect to, and stop a test db."""
+    initial_wd = os.getcwd()
+    os.chdir(DB_DIR)
+    try:
+        base_conn_string = "postgresql://postgres@localhost:5432"
+        run_and_log(f"psql {base_conn_string}", input="CREATE DATABASE freenome-build WITH OWNER=postgres")
+        conn_string = f"{base_conn_string}/freenome-build"
+        connect_cmd = f"psql {conn_string}"
+
+        migrations_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} run-migrations"
+        subprocess.check_call(migrations_cmd, shell=True)
+
+        insert_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} insert-test-data"
+        subprocess.check_output(insert_cmd, shell=True).decode().strip()
+        stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
+        assert stdout == "test \n------\n test\n(1 row)"
+
+        reset_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} reset-data"
+        subprocess.check_output(reset_cmd, shell=True).decode().strip()
+        stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
+        assert stdout == "test \n------\n(0 rows)"
+
+        insert_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} insert-test-data"
+        subprocess.check_output(insert_cmd, shell=True).decode().strip()
+        stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
+        assert stdout == "test \n------\n test\n(1 row)"
+    finally:
+        os.chdir(initial_wd)
+
+
+def test_docker_db_cli():
     """Check that we can start, connect to, and stop a test db."""
     initial_wd = os.getcwd()
     os.chdir(DB_DIR)
