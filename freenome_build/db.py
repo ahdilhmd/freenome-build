@@ -92,6 +92,7 @@ def setup_db(conn_data: ConnectionData, repo_path: str) -> None:
             )
     run_and_log(f"psql -h {conn_data.host} -p {conn_data.port} -U postgres -d postgres",
                 input=setup_sql.encode())
+    run_and_log(f"psql {conn_data.conn_string}", input="\q")
     _run_migrations(conn_data, repo_path)
 
 
