@@ -20,7 +20,6 @@ DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "./skeleton_rep
                     reason="Test for travis where the database is created by the postgresql service")
 def test_travis_db_cli():
     conn_string = "postgresql://freenome_build:password@localhost:5432/freenome_build"
-    conn_string = "postgresql://freenome_build:password@localhost:51891/freenome_build"
     connect_cmd = f"psql {conn_string}"
     conn_data = ConnectionData.from_conn_string(conn_string)
 
