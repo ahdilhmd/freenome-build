@@ -8,7 +8,8 @@ from freenome_build.db import (
     setup_db,
     insert_test_data,
     reset_data,
-    stop_local_database
+    stop_local_database,
+    ConnectionData
 )
 from freenome_build.util import run_and_log
 
@@ -18,38 +19,28 @@ DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "./skeleton_rep
 @pytest.mark.skipif('TRAVIS' not in os.environ,
                     reason="Test for travis where the database is created by the postgresql service")
 def test_travis_db_cli():
-    """Check that we can start, connect to, and stop a test db."""
-    initial_wd = os.getcwd()
-    os.chdir(DB_DIR)
-    try:
-        conn_string = "postgresql://freenome_build:password@localhost:5432/freenome_build"
-        connect_cmd = f"psql {conn_string}"
+    conn_string = "postgresql://freenome_build:password@localhost:5432/freenome_build"
+    conn_string = "postgresql://freenome_build:password@localhost:51891/freenome_build"
+    connect_cmd = f"psql {conn_string}"
+    conn_data = ConnectionData.from_conn_string(conn_string)
 
-        setup_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} setup-db"
-        subprocess.check_call(setup_cmd, shell=True)
+    setup_db(conn_data, DB_DIR)
 
-        insert_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} insert-test-data"
-        subprocess.check_output(insert_cmd, shell=True).decode().strip()
-        stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
-        assert stdout == "test \n------\n test\n(1 row)"
+    insert_test_data(conn_data, DB_DIR)
+    stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
+    assert stdout == "test \n------\n test\n(1 row)"
 
-        reset_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} reset-data"
-        subprocess.check_output(reset_cmd, shell=True).decode().strip()
-        stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
-        assert stdout == "test \n------\n(0 rows)"
+    reset_data(conn_data, DB_DIR)
+    stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
+    assert stdout == "test \n------\n(0 rows)"
 
-        insert_cmd = f"freenome-build db --path {DB_DIR} --conn-string {conn_string} insert-test-data"
-        subprocess.check_output(insert_cmd, shell=True).decode().strip()
-        stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
-        assert stdout == "test \n------\n test\n(1 row)"
-    finally:
-        os.chdir(initial_wd)
+    insert_test_data(conn_data, DB_DIR)
+    stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
+    assert stdout == "test \n------\n test\n(1 row)"
 
 
 def test_docker_db_cli():
     """Check that we can start, connect to, and stop a test db."""
-    initial_wd = os.getcwd()
-    os.chdir(DB_DIR)
     try:
         start_cmd = f"freenome-build db --path {DB_DIR} start-local-test-db"
         conn_string = subprocess.check_output(start_cmd, shell=True).decode().strip()
@@ -67,7 +58,6 @@ def test_docker_db_cli():
         stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
         assert stdout == "test \n------\n test\n(1 row)"
     finally:
-        os.chdir(initial_wd)
         stop_cmd = f"freenome-build db --conn-string {conn_string} stop"
         subprocess.check_call(stop_cmd, shell=True)
 

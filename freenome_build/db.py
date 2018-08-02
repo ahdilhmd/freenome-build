@@ -232,6 +232,9 @@ def reset_data(conn_data: ConnectionData, repo_path: str) -> None:
         # Drop the database
         run_and_log(f"psql -h {conn_data.host} -p {conn_data.port} -U postgres -d postgres",
                     input=f"drop database {conn_data.dbname}")
+        # Drop the user
+        run_and_log(f"psql -h {conn_data.host} -p {conn_data.port} -U postgres -d postgres",
+                    input=f"drop user {conn_data.dbname}")
         # Recreate the database and run migrations
         setup_db(conn_data, repo_path)
 
