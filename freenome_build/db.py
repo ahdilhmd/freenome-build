@@ -255,16 +255,17 @@ def stop_local_database(conn_data: ConnectionData) -> None:
 
 
 def start_local_database_main(args):
-    conn_data = start_local_database(args.path, args.project_name, args.port)
+    conn_data = start_local_database(args.path, args.project_name, port=args.port)
     logger.info(f"Successfully started a database. Use the following string to connect:")
     print(conn_data)
 
 
 def start_local_test_database_main(args):
     if args.conn_data:
-        conn_data = start_local_database(args.path, args.conn_data.dbname, args.conn_data.port)
+        conn_data = start_local_database(args.path, args.conn_data.dbname,
+                                         port=args.conn_data.port, password=args.conn_data.password)
     else:
-        conn_data = start_local_database(args.path, args.project_name, args.port)
+        conn_data = start_local_database(args.path, args.project_name, port=args.port)
     setup_db(conn_data, args.path)
     insert_test_data(conn_data, args.path)
     logger.info(f"Successfully started a database. Use the following string to connect:")
