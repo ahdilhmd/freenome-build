@@ -7,6 +7,7 @@ python:
 dist: trusty
 sudo: true
 addons:
+  postgresql: "9.6"
   apt:
     packages:
     - libdbd-pg-perl
