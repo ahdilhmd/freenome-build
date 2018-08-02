@@ -48,12 +48,6 @@ class ConnectionData():
         out += f"@{self.host}:{self.port}/{self.dbname}"
         return out
 
-    def get_conn(self):
-        if self.conn:
-            return self.conn
-        self.conn = psycopg2.connect(self.conn_string)
-        return self.conn
-
     def __str__(self):
         return self.conn_string
 
@@ -235,7 +229,7 @@ def reset_data(conn_data: ConnectionData, repo_path: str) -> None:
                     input=f"drop database {conn_data.dbname}")
         # Drop the user
         run_and_log(f"psql -h {conn_data.host} -p {conn_data.port} -U postgres -d postgres",
-                    input=f"drop user {conn_data.dbname}")
+                    input=f"drop user {conn_data.user}")
         # Recreate the database and run migrations
         setup_db(conn_data, repo_path)
 
