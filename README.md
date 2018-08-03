@@ -7,10 +7,10 @@ Packaging, build, and development tools.
 Manage a test postgres DB in a Docker container. This also runs a DB setup script and DB migrations. The structure of the setup and migrations scripts is described in more detail in the  [README](./freenome_build/database_template/README.md)
 
 ## freenome-build db start-local-test-db
-Start a test DB with test data. Returns a connection string to stdout
+Start a local test DB with test data. Returns a connection string to stdout
 
-## freenome-build db stop 
-Stop a test DB.
+## freenome-build db stop-local
+Stop a local test DB.
 
 ## freenome-build develop
 Setup a conda development environment for the current repo.
