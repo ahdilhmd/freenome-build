@@ -66,28 +66,47 @@ def _find_free_port():
         return s.getsockname()[1]
 
 
-def setup_db(conn_data: DbConnectionData, repo_path: str) -> None:
-    # check if 'setup' exists in repo_path/database/
-    repo_setup_sql_path = norm_abs_join_path(repo_path, "./database/setup.sql")
-    if os.path.exists(repo_setup_sql_path):
-        with open(repo_setup_sql_path) as ifp:
-            setup_sql = ifp.read()
-    # if this doesn't exist, revert to the default
-    else:
-        setup_sql_template_path = norm_abs_join_path(
-            os.path.dirname(__file__), "./database_template/scripts/setup.sql")
-        logger.debug(f"The repo at '{repo_path}' does not contain './database/setup.sql'."
-                     f"\nDefaulting to {setup_sql_template_path} with "
-                     f"USER='{conn_data.user}', DATABASE='{conn_data.dbname}', "
-                     f"PASSWORD='{conn_data.password}")
-        with open(setup_sql_template_path) as ifp:
-            setup_sql = ifp.read().format(
-                PGUSER=conn_data.user, PGDATABASE=conn_data.dbname, PGPASSWORD=conn_data.password
-            )
-    logger.info(setup_sql)
-    run_and_log(f"psql -h {conn_data.host} -p {conn_data.port} -U postgres -d postgres",
-                input=setup_sql.encode())
-    _run_migrations(conn_data, repo_path)
+def _run_migrations(conn_data: DbConnectionData, repo_path: str) -> None:
+    # check if 'migrate' exists in repo_path/database/
+    repo_migrate_path = norm_abs_join_path(repo_path, "./database/migrate")
+    if os.path.exists(repo_migrate_path):
+        # If it does, run the migration script
+        run_and_log(repo_migrate_path)
+        return
+    logger.info(f"The repo at '{repo_path}' does not contain './database/migrate' script"
+                "\nDefaulting to running sqitch migrations in './database/sqitch'")
+    sqitch_path = norm_abs_join_path(repo_path, "./database/sqitch")
+    if not os.path.exists(sqitch_path):
+        raise RuntimeError(
+            f"Sqitch migration files must exist at '{sqitch_path}' "
+            "if a migration script is not provided.")
+
+    with change_directory(sqitch_path):
+        try:
+            run_and_log(
+                f"sqitch --engine pg deploy {conn_data.sqitch_string}")
+        except subprocess.CalledProcessError as inst:
+            # we don't care if there's nothing to deploy
+            if inst.stderr.decode().strip() == 'Nothing to deploy (empty plan)':
+                pass
+            else:
+                raise
+
+
+def _wait_for_db_cluster_to_start(host: str, port: int, max_wait_time=MAX_DB_WAIT_TIME, recheck_interval=0.2) -> None:
+    conn_str = f"dbname=postgres user=postgres host={host} port={port}"
+    for _ in range(int(max_wait_time/recheck_interval)+1):
+        try:
+            with psycopg2.connect(conn_str) as _: # noqa
+                # we just want to see if we can connect, so if we do then connect
+                logger.debug(f"Database at '{host}:{port}' is up!")
+                return
+        except psycopg2.OperationalError:
+            logger.debug(f"DB cluster at '{host}:{port}' is not yet up.")
+            time.sleep(recheck_interval)
+            continue
+
+    raise RuntimeError(f"Aborting because the DB did not start within {MAX_DB_WAIT_TIME} seconds.")
 
 
 def start_local_database(repo_path: str, project_name: str, port: int = None, password: str = None) -> DbConnectionData:
@@ -137,31 +156,28 @@ def start_local_database(repo_path: str, project_name: str, port: int = None, pa
     return conn_data
 
 
-def _run_migrations(conn_data: DbConnectionData, repo_path: str) -> None:
-    # check if 'migrate' exists in repo_path/database/
-    repo_migrate_path = norm_abs_join_path(repo_path, "./database/migrate")
-    if os.path.exists(repo_migrate_path):
-        # If it does, run the migration script
-        run_and_log(repo_migrate_path)
-        return
-    logger.info(f"The repo at '{repo_path}' does not contain './database/migrate' script"
-                "\nDefaulting to running sqitch migrations in './database/sqitch'")
-    sqitch_path = norm_abs_join_path(repo_path, "./database/sqitch")
-    if not os.path.exists(sqitch_path):
-        raise RuntimeError(
-            f"Sqitch migration files must exist at '{sqitch_path}' "
-            "if a migration script is not provided.")
-
-    with change_directory(sqitch_path):
-        try:
-            run_and_log(
-                f"sqitch --engine pg deploy {conn_data.sqitch_string}")
-        except subprocess.CalledProcessError as inst:
-            # we don't care if there's nothing to deploy
-            if inst.stderr.decode().strip() == 'Nothing to deploy (empty plan)':
-                pass
-            else:
-                raise
+def setup_db(conn_data: DbConnectionData, repo_path: str) -> None:
+    # check if 'setup' exists in repo_path/database/
+    repo_setup_sql_path = norm_abs_join_path(repo_path, "./database/setup.sql")
+    if os.path.exists(repo_setup_sql_path):
+        with open(repo_setup_sql_path) as ifp:
+            setup_sql = ifp.read()
+    # if this doesn't exist, revert to the default
+    else:
+        setup_sql_template_path = norm_abs_join_path(
+            os.path.dirname(__file__), "./database_template/scripts/setup.sql")
+        logger.debug(f"The repo at '{repo_path}' does not contain './database/setup.sql'."
+                     f"\nDefaulting to {setup_sql_template_path} with "
+                     f"USER='{conn_data.user}', DATABASE='{conn_data.dbname}', "
+                     f"PASSWORD='{conn_data.password}")
+        with open(setup_sql_template_path) as ifp:
+            setup_sql = ifp.read().format(
+                PGUSER=conn_data.user, PGDATABASE=conn_data.dbname, PGPASSWORD=conn_data.password
+            )
+    logger.info(setup_sql)
+    run_and_log(f"psql -h {conn_data.host} -p {conn_data.port} -U postgres -d postgres",
+                input=setup_sql.encode())
+    _run_migrations(conn_data, repo_path)
 
 
 def insert_test_data(conn_data: DbConnectionData, repo_path: str) -> None:
@@ -189,22 +205,6 @@ def insert_test_data(conn_data: DbConnectionData, repo_path: str) -> None:
             f"The repo at '{repo_path}' does not contain './database/insert_test_data.sql' script")
 
     raise ValueError(f"'{repo_path}' does not contain an insert test data script or sql file.")
-
-
-def _wait_for_db_cluster_to_start(host: str, port: int, max_wait_time=MAX_DB_WAIT_TIME, recheck_interval=0.2) -> None:
-    conn_str = f"dbname=postgres user=postgres host={host} port={port}"
-    for _ in range(int(max_wait_time/recheck_interval)+1):
-        try:
-            with psycopg2.connect(conn_str) as _: # noqa
-                # we just want to see if we can connect, so if we do then connect
-                logger.debug(f"Database at '{host}:{port}' is up!")
-                return
-        except psycopg2.OperationalError:
-            logger.debug(f"DB cluster at '{host}:{port}' is not yet up.")
-            time.sleep(recheck_interval)
-            continue
-
-    raise RuntimeError(f"Aborting because the DB did not start within {MAX_DB_WAIT_TIME} seconds.")
 
 
 def reset_data(conn_data: DbConnectionData, repo_path: str) -> None:
