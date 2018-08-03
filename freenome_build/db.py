@@ -18,7 +18,7 @@ logger = logging.getLogger(__file__)  # noqa: invalid-name
 MAX_DB_WAIT_TIME = 10
 
 
-class ConnectionData():
+class DbConnectionData():
     def __init__(self, host, port, dbname, user, password=None):
         self.host = host
         self.port = port
@@ -66,7 +66,7 @@ def _find_free_port():
         return s.getsockname()[1]
 
 
-def setup_db(conn_data: ConnectionData, repo_path: str) -> None:
+def setup_db(conn_data: DbConnectionData, repo_path: str) -> None:
     # check if 'setup' exists in repo_path/database/
     repo_setup_sql_path = norm_abs_join_path(repo_path, "./database/setup.sql")
     if os.path.exists(repo_setup_sql_path):
@@ -90,7 +90,7 @@ def setup_db(conn_data: ConnectionData, repo_path: str) -> None:
     _run_migrations(conn_data, repo_path)
 
 
-def start_local_database(repo_path: str, project_name: str, port: int = None, password: str = None) -> ConnectionData:
+def start_local_database(repo_path: str, project_name: str, port: int = None, password: str = None) -> DbConnectionData:
     """Start a test database in a docker container.
 
     This starts a new test database in a docker container. This function:
@@ -132,12 +132,12 @@ def start_local_database(repo_path: str, project_name: str, port: int = None, pa
     # Wait for the db to start up before configuring it
     _wait_for_db_cluster_to_start(host, port)
 
-    conn_data = ConnectionData(host, port, dbname, user, password)
+    conn_data = DbConnectionData(host, port, dbname, user, password)
 
     return conn_data
 
 
-def _run_migrations(conn_data: ConnectionData, repo_path: str) -> None:
+def _run_migrations(conn_data: DbConnectionData, repo_path: str) -> None:
     # check if 'migrate' exists in repo_path/database/
     repo_migrate_path = norm_abs_join_path(repo_path, "./database/migrate")
     if os.path.exists(repo_migrate_path):
@@ -164,7 +164,7 @@ def _run_migrations(conn_data: ConnectionData, repo_path: str) -> None:
                 raise
 
 
-def insert_test_data(conn_data: ConnectionData, repo_path: str) -> None:
+def insert_test_data(conn_data: DbConnectionData, repo_path: str) -> None:
     # check if 'insert_test_data' exists in repo_path/database/
     repo_insert_test_data_path = norm_abs_join_path(
         repo_path, "./database/insert_test_data")
@@ -207,7 +207,7 @@ def _wait_for_db_cluster_to_start(host: str, port: int, max_wait_time=MAX_DB_WAI
     raise RuntimeError(f"Aborting because the DB did not start within {MAX_DB_WAIT_TIME} seconds.")
 
 
-def reset_data(conn_data: ConnectionData, repo_path: str) -> None:
+def reset_data(conn_data: DbConnectionData, repo_path: str) -> None:
     repo_reset_data_path = norm_abs_join_path(
         repo_path, "./database/reset_data")
     repo_reset_data_sql_path = norm_abs_join_path(
@@ -234,7 +234,7 @@ def reset_data(conn_data: ConnectionData, repo_path: str) -> None:
         setup_db(conn_data, repo_path)
 
 
-def stop_local_database(conn_data: ConnectionData) -> None:
+def stop_local_database(conn_data: DbConnectionData) -> None:
     image_name = f"{conn_data.dbname}_{conn_data.port}"
     cmd = f"docker kill {image_name}"
     try:
@@ -274,25 +274,25 @@ def start_local_test_database_main(args):
 
 def setup_db_main(args):
     if not args.conn_data:
-        args.conn_data = ConnectionData(args.host, args.port, args.project_name, args.project_name, args.password)
+        args.conn_data = DbConnectionData(args.host, args.port, args.project_name, args.project_name, args.password)
     setup_db(args.conn_data, args.path)
 
 
 def insert_test_data_main(args):
     if not args.conn_data:
-        args.conn_data = ConnectionData(args.host, args.port, args.project_name, args.project_name, args.password)
+        args.conn_data = DbConnectionData(args.host, args.port, args.project_name, args.project_name, args.password)
     insert_test_data(args.conn_data, args.path)
 
 
 def reset_data_main(args):
     if not args.conn_data:
-        args.conn_data = ConnectionData(args.host, args.port, args.project_name, args.project_name, args.password)
+        args.conn_data = DbConnectionData(args.host, args.port, args.project_name, args.project_name, args.password)
     reset_data(args.conn_data, args.path)
 
 
 def stop_local_database_main(args):
     if not args.conn_data:
-        args.conn_data = ConnectionData(args.host, args.port, args.project_name, args.project_name, args.password)
+        args.conn_data = DbConnectionData(args.host, args.port, args.project_name, args.project_name, args.password)
     stop_local_database(args.conn_data)
 
 
@@ -359,7 +359,7 @@ def db_main(args):
         logger.info(f"Setting project name to '{args.project_name}'")
 
     if args.conn_string is not None:
-        args.conn_data = ConnectionData.from_conn_string(args.conn_string)
+        args.conn_data = DbConnectionData.from_conn_string(args.conn_string)
     else:
         args.conn_data = None
 

@@ -9,7 +9,7 @@ from freenome_build.db import (
     insert_test_data,
     reset_data,
     stop_local_database,
-    ConnectionData
+    DbConnectionData
 )
 from freenome_build.util import run_and_log
 
@@ -21,7 +21,7 @@ DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "./skeleton_rep
 def test_travis_db_cli():
     conn_string = "postgresql://freenome_build:password@localhost:5432/freenome_build"
     connect_cmd = f"psql {conn_string}"
-    conn_data = ConnectionData.from_conn_string(conn_string)
+    conn_data = DbConnectionData.from_conn_string(conn_string)
 
     setup_db(conn_data, DB_DIR)
 
