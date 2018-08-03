@@ -35,7 +35,7 @@ def main():
 
     if args.command == 'develop':
         develop_main(args)
-    elif args.command == 'test-db':
+    elif args.command == 'db':
         db_main(args)
     elif args.command == 'deploy':
         deploy_main(args)

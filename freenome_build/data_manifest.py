@@ -5,11 +5,9 @@ import subprocess
 import logging
 from collections import namedtuple, OrderedDict
 
-from google.api_core.exceptions import NotFound
-
 import portalocker
 
-from freenome_build.util import get_gcs_blob
+from freenome_build.util import get_gcs_blob, BlobNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -244,7 +242,7 @@ class DataManifestWriter(_DataManifestBase):
                     f"size '{blob.size}' vs '{local_fsize}' for '{fname}')"
                 )
         # if we can't find the file, upload it
-        except NotFound:
+        except BlobNotFoundError:
             logger.info(f"Uploading '{fname}' to '{self.remote_prefix}{remote_relative_path}'")
             blob.upload_from_filename(fname)
             assert blob.size == local_fsize, \

@@ -6,8 +6,6 @@ import subprocess
 import logging
 import urllib
 
-from google.cloud.storage.client import Client
-
 import conda_build.api
 from conda_build.config import Config as CondaBuildConfig
 
@@ -16,6 +14,10 @@ logger = logging.getLogger(__file__)  # noqa: invalid-name
 
 
 class YamlNotFoundError(Exception):
+    pass
+
+
+class BlobNotFoundError(Exception):
     pass
 
 
@@ -35,8 +37,15 @@ def get_gcs_blob(gcp_project, remote_prefix, remote_relative_path):
     absolute_remote_path = remote_prefix + remote_relative_path
     res = urllib.parse.urlsplit(absolute_remote_path)
     rel_path = res.path[1:]
-    blob = Client(gcp_project).bucket(res.netloc).blob(rel_path)
-    return blob
+    assert rel_path is not None, "Stop the flake8 problem"
+    if 'found':
+        raise NotImplementedError(
+            "I hate google cloud's python package, so re-write this to use gsutil and subprocess")
+    else:
+        raise BlobNotFoundError(
+            f"Could not find blob: '{gcp_project}'-'remote_prefix'-'remote_relative_path'")
+    # blob = Client(gcp_project).bucket(res.netloc).blob(rel_path)
+    # return blob
 
 
 def run_and_log(cmd, input=None):
