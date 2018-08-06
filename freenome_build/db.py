@@ -5,7 +5,9 @@ import socket
 import subprocess
 import string
 import time
+from typing import Tuple
 
+import json
 import psycopg2
 from contextlib import closing
 from urllib.parse import urlparse
@@ -14,8 +16,11 @@ from freenome_build.util import norm_abs_join_path, change_directory, get_git_re
 
 logger = logging.getLogger(__file__)  # noqa: invalid-name
 
-# the maximum amount of time in seconds to wait for the DB to come up before raising an error
+# the maximum amount of time in seconds to wait for a local DB to come up before raising an error
 MAX_DB_WAIT_TIME = 10
+
+# The maximum amount of time in seconds to wait for a k8s db to come up.
+MAX_CONTAINER_CHECKS = 600
 
 
 class DbConnectionData():
@@ -109,7 +114,40 @@ def _wait_for_db_cluster_to_start(host: str, port: int, max_wait_time=MAX_DB_WAI
     raise RuntimeError(f"Aborting because the DB did not start within {MAX_DB_WAIT_TIME} seconds.")
 
 
-def start_local_database(repo_path: str, project_name: str, port: int = None, password: str = None) -> DbConnectionData:
+def _wait_for_container(pod_id: str):
+    last_timestamp = ""
+    event_cmd = f"kubectl get events -o json --sort-by=.metadata.creationTimestamp " \
+                f"--field-selector involvedObject.name={pod_id}"
+    pod_status_cmd = f"kubectl get pod {pod_id}"
+    attempts = 0
+    while attempts < MAX_CONTAINER_CHECKS:
+        # We need to do this separately from checking for events since the
+        # "Started" event doesn't necessarily mean the pod is ready.
+        pod_status = subprocess.check_output(pod_status_cmd, shell=True).decode().strip()
+        if 'Running' in pod_status:
+            return
+        # If the pod isn't running yet, check for any new events.
+        events = json.loads(subprocess.check_output(event_cmd, shell=True).decode().strip())['items']
+        for event in events:
+            # If this is a new event, log it.
+            if last_timestamp < event['firstTimestamp']:
+                logger.info(f"Container status: {event['message']}")
+            # If there was an error, raise an exception
+            if 'Error' in event['message']:
+                raise RuntimeError(f"Container failed to start: {event['message']}")
+        if len(events) > 0:
+            last_timestamp = events[-1]['firstTimestamp']
+        time.sleep(1)
+    raise RuntimeError(f"Container failed to start after {MAX_CONTAINER_CHECKS} seconds")
+
+
+def _get_pod_id_from_pod_ip(pod_ip: str) -> str:
+    get_id_cmd = f"kubectl get pods --output jsonpath=\"{{.items[?(.status.podIP=='{pod_ip}')].metadata.name}}\""
+    return subprocess.check_output(get_id_cmd, shell=True).decode().strip()
+
+
+def start_local_database(repo_path: str, project_name: str, dbname: str = None, user: str = None,
+                         port: int = None, password: str = None) -> DbConnectionData:
     """Start a test database in a docker container.
 
     This starts a new test database in a docker container. This function:
@@ -118,8 +156,10 @@ def start_local_database(repo_path: str, project_name: str, port: int = None, pa
     """
     # The default dbname and user are the project_name. We'll also generate a random
     # password if one wasn't passed in.
-    dbname = project_name
-    user = project_name
+    if dbname is None:
+        dbname = project_name
+    if user is None:
+        user = project_name
 
     # set the path to the Postgres Dockerfile
     docker_file_path = norm_abs_join_path(repo_path, "./database/Dockerfile")
@@ -154,6 +194,30 @@ def start_local_database(repo_path: str, project_name: str, port: int = None, pa
     conn_data = DbConnectionData(host, port, dbname, user, password)
 
     return conn_data
+
+
+def start_k8s_database(repo_path: str, project_name: str, dbname: str = None, user: str = None,
+                       password: str = None, kube_pod_config: str = None) -> Tuple[DbConnectionData, str]:
+    if dbname is None:
+        dbname = project_name
+    if user is None:
+        user = project_name
+    port = 5432
+
+    if kube_pod_config is None:
+        kube_pod_config = norm_abs_join_path(
+            os.path.dirname(__file__), "./database_template/db_pod_config.yaml")
+    kcreate_cmd = f"kubectl create -f {kube_pod_config} | sed 's/pod \"\|\" created//g'"
+    pod_id = subprocess.check_output(kcreate_cmd, shell=True).decode().strip()
+
+    _wait_for_container(pod_id)
+
+    # Get the pod's IP for the db host
+    pod_ip_cmd = f"kubectl describe pod {pod_id} | grep IP | sed -E 's/IP:[[:space:]]+//'"
+    host = subprocess.check_output(pod_ip_cmd, shell=True).decode().strip()
+
+    conn_data = DbConnectionData(host, port, dbname, user, password)
+    return conn_data, pod_id
 
 
 def setup_db(conn_data: DbConnectionData, repo_path: str) -> None:
@@ -254,22 +318,64 @@ def stop_local_database(conn_data: DbConnectionData) -> None:
     run_and_log(cmd)
 
 
+def stop_k8s_database(pod_id: str) -> None:
+    run_and_log(f"kubectl delete pod {pod_id}")
+
+
 def start_local_database_main(args):
     conn_data = start_local_database(args.path, args.project_name, port=args.port)
     logger.info(f"Successfully started a database. Use the following string to connect:")
+    # Printing instead of logging the connection string so that the user can
+    # pick it up from stdout
     print(conn_data)
+
+
+def start_k8s_database_main(args):
+    if args.conn_data:
+        conn_data, pod_id = start_k8s_database(args.path, args.project_name, kube_pod_config=args.kube_pod_config,
+                                               dbname=args.conn_data.dbname, user=args.conn_data.user,
+                                               port=args.conn_data.port, password=args.conn_data.password)
+    else:
+        conn_data, pod_id = start_k8s_database(args.path, args.project_name,
+                                               kube_pod_config=args.kube_pod_config)
+    logger.info(f"Successfully started a database. Connect to {pod_id} and use the following string to connect:")
+    # Printing instead of logging the connection string and pod id so that the user can
+    # pick it up from stdout
+    print(conn_data)
+    print(pod_id)
 
 
 def start_local_test_database_main(args):
     if args.conn_data:
-        conn_data = start_local_database(args.path, args.conn_data.dbname,
+        conn_data = start_local_database(args.path, args.project_name,
+                                         dbname=args.conn_data.dbname, user=args.conn_data.user,
                                          port=args.conn_data.port, password=args.conn_data.password)
     else:
         conn_data = start_local_database(args.path, args.project_name, port=args.port)
     setup_db(conn_data, args.path)
     insert_test_data(conn_data, args.path)
     logger.info(f"Successfully started a database. Use the following string to connect:")
+    # Printing instead of logging the connection string so that the user can
+    # pick it up from stdout
     print(conn_data)
+
+
+def start_k8s_test_database_main(args):
+    # This option needs to be called from within a kubernetes container
+    # because this machine needs to be able communicate with the pod
+    # that's created
+    if args.conn_data:
+        conn_data, pod_id = start_k8s_database(args.path, args.conn_data.dbname,
+                                               port=args.conn_data.port, kube_pod_config=args.kube_pod_config)
+    else:
+        conn_data, pod_id = start_k8s_database(args.path, args.project_name, kube_pod_config=args.kube_pod_config)
+    setup_db(conn_data, args.path)
+    insert_test_data(conn_data, args.path)
+    logger.info(f"Successfully started a database. Connect to {pod_id} and use the following string to connect:")
+    # Printing instead of logging the connection string and pod id so that the user can
+    # pick it up from stdout
+    print(conn_data)
+    print(pod_id)
 
 
 def setup_db_main(args):
@@ -294,6 +400,18 @@ def stop_local_database_main(args):
     if not args.conn_data:
         args.conn_data = DbConnectionData(args.host, args.port, args.project_name, args.project_name, args.password)
     stop_local_database(args.conn_data)
+
+
+def stop_k8s_database_main(args):
+    if args.pod_id:
+        pod_id = args.pod_id
+    elif args.conn_data:
+        pod_id = _get_pod_id_from_pod_ip(args.conn_data.host)
+    elif args.host != 'localhost':
+        pod_id = _get_pod_id_from_pod_ip(args.host)
+    else:
+        raise RuntimeError("Please specify a pod_id or host IP")
+    stop_k8s_database(pod_id)
 
 
 def add_db_subparser(subparsers):
@@ -323,16 +441,31 @@ def add_db_subparser(subparsers):
         '--conn-string', default=None,
         help='The postgres connection string that can be used to connect to the db'
     )
+    database_parser.add_argument(
+        '--kube-pod-config', default=None,
+        help='The pod config to use for a kubernetes db. Defaults to the basic template in ./database_template'
+    )
+    database_parser.add_argument(
+        '--pod_id', default=None,
+        help='The pod id that will be used when stopping a database. This is only used in stoppnig a database.'
+    )
 
     # add the subparsers
     database_subparsers = database_parser.add_subparsers(dest='test_db_command')
     database_subparsers.required = True
 
     # Start a DB
-    database_subparsers.add_parser('start', help='Start a database')
+    database_subparsers.add_parser('start-local', help='Start a local database')
+
+    # Start a DB
+    database_subparsers.add_parser('start-k8s', help='Start a database in a Kubernetes pod')
 
     # Start a test DB, run migrations, insert the starting data
     database_subparsers.add_parser('start-local-test-db', help='Start a database with all the default data')
+
+    # Start a test DB, run migrations, insert the starting data
+    database_subparsers.add_parser('start-k8s-test-db',
+                                   help='Start a database with all the default data in a kubernetes pod')
 
     # Run the sqitch migrations on the database
     database_subparsers.add_parser('setup-db', help='Create database and run migrations on database schemas')
@@ -346,7 +479,10 @@ def add_db_subparser(subparsers):
                                    'Requires inserting the test data afterwards.')
 
     # Stop the test db
-    database_subparsers.add_parser('stop', help='stop the test database')
+    database_subparsers.add_parser('stop-local', help='Stop the local test database')
+
+    # Stop the test db
+    database_subparsers.add_parser('stop-k8s', help='Stop the kubernetes test database')
 
 
 def db_main(args):
@@ -363,17 +499,23 @@ def db_main(args):
     else:
         args.conn_data = None
 
-    if args.test_db_command == 'start':
+    if args.test_db_command == 'start-local':
         start_local_database_main(args)
+    if args.test_db_command == 'start-k8s':
+        start_k8s_database_main(args)
     elif args.test_db_command == 'start-local-test-db':
         start_local_test_database_main(args)
+    elif args.test_db_command == 'start-k8s-test-db':
+        start_k8s_test_database_main(args)
     elif args.test_db_command == 'setup-db':
         setup_db_main(args)
     elif args.test_db_command == 'insert-test-data':
         insert_test_data_main(args)
     elif args.test_db_command == 'reset-data':
         reset_data_main(args)
-    elif args.test_db_command == 'stop':
+    elif args.test_db_command == 'stop-local':
         stop_local_database_main(args)
+    elif args.test_db_command == 'stop-k8s':
+        stop_k8s_database_main(args)
     else:
         raise ValueError(f"Unrecognized DB subcommand '{args.test_db_command}'")
