@@ -146,7 +146,8 @@ def _get_pod_id_from_pod_ip(pod_ip: str) -> str:
     return subprocess.check_output(get_id_cmd, shell=True).decode().strip()
 
 
-def start_local_database(repo_path: str, project_name: str, port: int = None, password: str = None) -> DbConnectionData:
+def start_local_database(repo_path: str, project_name: str, dbname: str = None, user: str = None,
+                         port: int = None, password: str = None) -> DbConnectionData:
     """Start a test database in a docker container.
 
     This starts a new test database in a docker container. This function:
@@ -155,8 +156,10 @@ def start_local_database(repo_path: str, project_name: str, port: int = None, pa
     """
     # The default dbname and user are the project_name. We'll also generate a random
     # password if one wasn't passed in.
-    dbname = project_name
-    user = project_name
+    if dbname is None:
+        dbname = project_name
+    if user is None:
+        user = project_name
 
     # set the path to the Postgres Dockerfile
     docker_file_path = norm_abs_join_path(repo_path, "./database/Dockerfile")
@@ -193,10 +196,12 @@ def start_local_database(repo_path: str, project_name: str, port: int = None, pa
     return conn_data
 
 
-def start_k8s_database(repo_path: str, project_name: str, password: str = None,
-                       kube_pod_config: str = None) -> Tuple[DbConnectionData, str]:
-    dbname = project_name
-    user = project_name
+def start_k8s_database(repo_path: str, project_name: str, dbname: str = None, user: str = None,
+                       password: str = None, kube_pod_config: str = None) -> Tuple[DbConnectionData, str]:
+    if dbname is None:
+        dbname = project_name
+    if user is None:
+        user = project_name
     port = 5432
 
     if kube_pod_config is None:
@@ -320,29 +325,38 @@ def stop_k8s_database(pod_id: str) -> None:
 def start_local_database_main(args):
     conn_data = start_local_database(args.path, args.project_name, port=args.port)
     logger.info(f"Successfully started a database. Use the following string to connect:")
+    # Printing instead of logging the connection string so that the user can
+    # pick it up from stdout
     print(conn_data)
 
 
 def start_k8s_database_main(args):
     if args.conn_data:
-        conn_data, pod_id = start_k8s_database(args.path, args.conn_data.dbname,
-                                               port=args.conn_data.port, kube_pod_config=args.kube_pod_config)
+        conn_data, pod_id = start_k8s_database(args.path, args.project_name, kube_pod_config=args.kube_pod_config,
+                                               dbname=args.conn_data.dbname, user=args.conn_data.user,
+                                               port=args.conn_data.port, password=args.conn_data.password)
     else:
-        conn_data, pod_id = start_k8s_database(args.path, args.project_name, kube_pod_config=args.kube_pod_config)
+        conn_data, pod_id = start_k8s_database(args.path, args.project_name,
+                                               kube_pod_config=args.kube_pod_config)
     logger.info(f"Successfully started a database. Connect to {pod_id} and use the following string to connect:")
+    # Printing instead of logging the connection string and pod id so that the user can
+    # pick it up from stdout
     print(conn_data)
     print(pod_id)
 
 
 def start_local_test_database_main(args):
     if args.conn_data:
-        conn_data = start_local_database(args.path, args.conn_data.dbname,
+        conn_data = start_local_database(args.path, args.project_name,
+                                         dbname=args.conn_data.dbname, user=args.conn_data.user,
                                          port=args.conn_data.port, password=args.conn_data.password)
     else:
         conn_data = start_local_database(args.path, args.project_name, port=args.port)
     setup_db(conn_data, args.path)
     insert_test_data(conn_data, args.path)
     logger.info(f"Successfully started a database. Use the following string to connect:")
+    # Printing instead of logging the connection string so that the user can
+    # pick it up from stdout
     print(conn_data)
 
 
@@ -358,6 +372,8 @@ def start_k8s_test_database_main(args):
     setup_db(conn_data, args.path)
     insert_test_data(conn_data, args.path)
     logger.info(f"Successfully started a database. Connect to {pod_id} and use the following string to connect:")
+    # Printing instead of logging the connection string and pod id so that the user can
+    # pick it up from stdout
     print(conn_data)
     print(pod_id)
 
@@ -391,7 +407,7 @@ def stop_k8s_database_main(args):
         pod_id = args.pod_id
     elif args.conn_data:
         pod_id = _get_pod_id_from_pod_ip(args.conn_data.host)
-    elif args.host:
+    elif args.host != 'localhost':
         pod_id = _get_pod_id_from_pod_ip(args.host)
     else:
         raise RuntimeError("Please specify a pod_id or host IP")
@@ -403,12 +419,12 @@ def add_db_subparser(subparsers):
     database_parser.required = True
     database_parser.add_argument('--path', default='.')
     database_parser.add_argument(
-        '--host', type=str,
-        help='The host that is running the database'
-    )
-    database_parser.add_argument(
         '--port', type=int,
         help='Port on which to start the test db. Default is a random free port'
+    )
+    database_parser.add_argument(
+        '--host', default='localhost',
+        help='Test DB host. Default: %(default)s'
     )
     database_parser.add_argument(
         '--password', default=None,

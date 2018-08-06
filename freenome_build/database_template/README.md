@@ -35,12 +35,12 @@ freenome-build db --conn-string postgresql://{dbuser}:{password}@{host}:{port}/{
 
 ## Kubernetes Testing Database
 
-Start a test database in a kubernetes pod.
+Start a test database in a kubernetes pod. There is an optional kube-pod-config option here that you can use to specify your own Pod config. Otherwise, the default in database_template is used
 ```
 freenome-build db start-k8s
 ```
 
-Start a test database in a kubernetes pod, run migrations, and insert test data:
+Start a test database in a kubernetes pod, run migrations, and insert test data. There is an optional kube-pod-config option here that you can use to specify your own Pod config. Otherwise, the default in database_template is used
 Note: This needs to be run from another container in the same pod so that the database container is reachable through its IP
 ```
 freenome-build db start-k8s-test-db

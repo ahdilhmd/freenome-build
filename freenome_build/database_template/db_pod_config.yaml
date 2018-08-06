@@ -7,4 +7,3 @@ spec:
   containers:
   - name: database
     image: postgres:9.6
-  
