@@ -79,7 +79,8 @@ def _test_k8s_connection(testing_pod_id: str, conn_data: DbConnectionData):
 
 
 # TODO(travis_service_account)
-@pytest.mark.skip(reason="There's no google service account for travis yet")
+@pytest.mark.skipif('TRAVIS' in os.environ,
+                    reason="This test is not run in Travis because there isn't a service account added yet")
 def test_k8s_db_cli():
     try:
         start_cmd = f"freenome-build db start-k8s"
@@ -102,10 +103,11 @@ def test_k8s_db_cli():
         run_and_log(stop_cmd)
         stop_cmd = f"freenome-build db --conn-string {conn_data2} stop-k8s"
         run_and_log(stop_cmd)
- 
+
 
 # TODO(travis_service_account)
-@pytest.mark.skip(reason="There's no google service account for travis yet")
+@pytest.mark.skipif('TRAVIS' in os.environ,
+                    reason="This test is not run in Travis because there isn't a service account added yet")
 def test_k8s_db_interface():
     try:
         conn_data, pod_id1 = start_k8s_database(DB_DIR, 'freenome_build')
