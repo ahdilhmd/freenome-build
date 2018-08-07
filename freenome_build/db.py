@@ -238,7 +238,6 @@ def setup_db(conn_data: DbConnectionData, repo_path: str) -> None:
             setup_sql = ifp.read().format(
                 PGUSER=conn_data.user, PGDATABASE=conn_data.dbname, PGPASSWORD=conn_data.password
             )
-    logger.info(setup_sql)
     run_and_log(f"psql -h {conn_data.host} -p {conn_data.port} -U postgres -d postgres",
                 input=setup_sql.encode())
     _run_migrations(conn_data, repo_path)
@@ -369,6 +368,7 @@ def start_k8s_test_database_main(args):
                                                port=args.conn_data.port, kube_pod_config=args.kube_pod_config)
     else:
         conn_data, pod_id = start_k8s_database(args.path, args.project_name, kube_pod_config=args.kube_pod_config)
+    _wait_for_db_cluster_to_start(conn_data.host, conn_data.port)
     setup_db(conn_data, args.path)
     insert_test_data(conn_data, args.path)
     logger.info(f"Successfully started a database. Connect to {pod_id} and use the following string to connect:")
