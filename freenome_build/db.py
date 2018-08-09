@@ -148,13 +148,17 @@ def _get_pod_id_from_pod_ip(pod_ip: str) -> str:
 
 def _remove_existing_container(container_name: str) -> None:
     get_container_cmd = f"docker ps -a | grep {container_name}"
-    # We don't want to use check_output here because it will throw an exception
-    # if stdout is empty.
-    p = subprocess.run(get_container_cmd, shell=True, stdout=subprocess.PIPE)
-    if p.stdout.decode().strip() != "":
+    try:
+        subprocess.check_call(get_container_cmd, shell=True)
+        # If no error occurs, that means that we need to delete a preexisting container
         rm_container_cmd = f"docker rm {container_name}"
         logger.info("Removing stopped container with the same name")
         run_and_log(rm_container_cmd)
+    except subprocess.CalledProcessError as e:
+        if e.returncode > 1:
+            # grep has returncode = 1 when 0 results are found so that's fine.
+            # Any return code other than 1 or 0 is a real error
+            raise
 
 
 def start_local_database(repo_path: str, project_name: str, dbname: str = None, user: str = None,
