@@ -65,7 +65,7 @@ def _execute_sql_script(sql_script_path, dbuser, dbname, host, port):
     pass
 
 
-def find_free_port():
+def _find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
         s.bind(('', 0))
         return s.getsockname()[1]
@@ -189,7 +189,7 @@ def start_local_database(repo_path: str, project_name: str, dbname: str = None, 
 
     # Find a free port if one wasn't specified
     if port is None:
-        port = find_free_port()
+        port = _find_free_port()
 
     if password is None:
         password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])

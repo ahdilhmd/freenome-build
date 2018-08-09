@@ -11,8 +11,7 @@ from freenome_build.db import (
     reset_data,
     stop_local_database,
     stop_k8s_database,
-    DbConnectionData,
-    find_free_port
+    DbConnectionData
 )
 from freenome_build.util import run_and_log
 
