@@ -146,6 +146,21 @@ def _get_pod_id_from_pod_ip(pod_ip: str) -> str:
     return subprocess.check_output(get_id_cmd, shell=True).decode().strip()
 
 
+def _remove_existing_container(container_name: str) -> None:
+    get_container_cmd = f"docker ps -a | grep {container_name}"
+    try:
+        subprocess.check_call(get_container_cmd, shell=True)
+        # If no error occurs, that means that we need to delete a preexisting container
+        rm_container_cmd = f"docker rm {container_name}"
+        logger.info("Removing stopped container with the same name")
+        run_and_log(rm_container_cmd)
+    except subprocess.CalledProcessError as e:
+        if e.returncode > 1:
+            # grep has returncode = 1 when 0 results are found so that's fine.
+            # Any return code other than 1 or 0 is a real error
+            raise
+
+
 def start_local_database(repo_path: str, project_name: str, dbname: str = None, user: str = None,
                          port: int = None, password: str = None) -> DbConnectionData:
     """Start a test database in a docker container.
@@ -179,11 +194,14 @@ def start_local_database(repo_path: str, project_name: str, dbname: str = None, 
     # Find a free port if one wasn't specified
     if port is None:
         port = _find_free_port()
+
     if password is None:
         password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
 
+    container_name = f"{dbname}_{port}"
+    _remove_existing_container(container_name)
     # starting db
-    run_cmd = f"docker run -d -p {port}:5432 --name {dbname}_{port} {dbname}:latest"
+    run_cmd = f"docker run -d -p {port}:5432 --name {container_name} {dbname}:latest"
     run_and_log(run_cmd)
 
     # Get the IP automatically
@@ -501,7 +519,7 @@ def db_main(args):
 
     if args.test_db_command == 'start-local':
         start_local_database_main(args)
-    if args.test_db_command == 'start-k8s':
+    elif args.test_db_command == 'start-k8s':
         start_k8s_database_main(args)
     elif args.test_db_command == 'start-local-test-db':
         start_local_test_database_main(args)

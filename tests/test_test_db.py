@@ -122,3 +122,10 @@ def test_k8s_db_interface():
     finally:
         stop_k8s_database(pod_id1)
         stop_k8s_database(pod_id2)
+
+
+def test_existing_db_container():
+    conn_data = start_local_database("/not/a/valid/path", "db_test")
+    # Stop the container and then try to create a container with the same port
+    run_and_log(f"docker stop {conn_data.dbname}_{conn_data.port}")
+    start_local_database("/not/a/valid/path", "db_test", dbname=conn_data.dbname, port=conn_data.port)
