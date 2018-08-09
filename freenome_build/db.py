@@ -65,7 +65,7 @@ def _execute_sql_script(sql_script_path, dbuser, dbname, host, port):
     pass
 
 
-def _find_free_port():
+def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
         s.bind(('', 0))
         return s.getsockname()[1]
@@ -146,6 +146,17 @@ def _get_pod_id_from_pod_ip(pod_ip: str) -> str:
     return subprocess.check_output(get_id_cmd, shell=True).decode().strip()
 
 
+def _remove_existing_container(container_name: str) -> None:
+    get_container_cmd = f"docker ps -a | grep {container_name}"
+    # We don't want to use check_output here because it will throw an exception
+    # if stdout is empty.
+    p = subprocess.run(get_container_cmd, shell=True, stdout=subprocess.PIPE)
+    if p.stdout.decode().strip() != "":
+        rm_container_cmd = f"docker rm {container_name}"
+        logger.info("Removing stopped container with the same name")
+        run_and_log(rm_container_cmd)
+
+
 def start_local_database(repo_path: str, project_name: str, dbname: str = None, user: str = None,
                          port: int = None, password: str = None) -> DbConnectionData:
     """Start a test database in a docker container.
@@ -178,12 +189,15 @@ def start_local_database(repo_path: str, project_name: str, dbname: str = None, 
 
     # Find a free port if one wasn't specified
     if port is None:
-        port = _find_free_port()
+        port = find_free_port()
+
     if password is None:
         password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
 
+    container_name = f"{dbname}_{port}"
+    _remove_existing_container(container_name)
     # starting db
-    run_cmd = f"docker run -d -p {port}:5432 --name {dbname}_{port} {dbname}:latest"
+    run_cmd = f"docker run -d -p {port}:5432 --name {container_name} {dbname}:latest"
     run_and_log(run_cmd)
 
     # Get the IP automatically
@@ -501,7 +515,7 @@ def db_main(args):
 
     if args.test_db_command == 'start-local':
         start_local_database_main(args)
-    if args.test_db_command == 'start-k8s':
+    elif args.test_db_command == 'start-k8s':
         start_k8s_database_main(args)
     elif args.test_db_command == 'start-local-test-db':
         start_local_test_database_main(args)
