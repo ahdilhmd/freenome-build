@@ -61,6 +61,6 @@ def add_deploy_subparser(subparsers):
     deploy_subparser.add_argument(
         '--skip', action='store_true', default=False, dest='skip_existing')
     deploy_subparser.add_argument(
-        '-r', '--package_name', action='store')
+        '-n', '--package_name', action='store')
     deploy_subparser.add_argument(
         '-a', '--all', action='store_true')
