@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import subprocess
 
 from freenome_build import github
 
@@ -17,6 +18,10 @@ def version(path, repo_name=None):
     if repo_name is None:
         repo_name = github.repo_name()
 
+    version = get_version_from_setup_py(path)
+    if version is not None:
+        return version
+
     version_from_init = get_version_from_init(path, repo_name)
     version_from_version_file = get_version_from_version_file(path)
 
@@ -29,6 +34,13 @@ def version(path, repo_name=None):
         return version_from_version_file
     else:
         raise FileNotFoundError("Version file cannot be found.")
+
+
+def get_version_from_setup_py(path):
+    try:
+        return subprocess.check_output(["python", "setup.py", "--version"], cwd=path).strip()
+    except Exception:
+        return None
 
 
 def get_version_from_init(path, repo_name=None):
