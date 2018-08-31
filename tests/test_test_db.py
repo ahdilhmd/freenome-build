@@ -42,6 +42,7 @@ def test_travis_db_cli():
 
 def test_docker_db_cli():
     """Check that we can start, connect to, and stop a test db."""
+    conn_string = None
     try:
         start_cmd = f"freenome-build db --path {DB_DIR} start-local-test-db"
         conn_string = subprocess.check_output(start_cmd, shell=True).decode().strip()
@@ -59,6 +60,8 @@ def test_docker_db_cli():
         stdout = subprocess.check_output(connect_cmd, shell=True, input=b"SELECT * FROM test; \q").decode().strip()
         assert stdout == "test \n------\n test\n(1 row)"
     finally:
+        if conn_string is None:
+            return
         stop_cmd = f"freenome-build db --conn-string {conn_string} stop-local"
         subprocess.check_call(stop_cmd, shell=True)
 
@@ -82,6 +85,8 @@ def _test_k8s_connection(testing_pod_id: str, conn_data: DbConnectionData):
 @pytest.mark.skipif('TRAVIS' in os.environ,
                     reason="This test is not run in Travis because there isn't a service account added yet")
 def test_k8s_db_cli():
+    conn_data1 = None
+    conn_data2 = None
     try:
         start_cmd = f"freenome-build db start-k8s"
         start_response = subprocess.check_output(start_cmd, shell=True).decode().strip().split("\n")
@@ -98,9 +103,13 @@ def test_k8s_db_cli():
         conn_data1.dbname = 'postgres'
         _test_k8s_connection(pod_id2, conn_data1)
     finally:
+        if conn_data1 is None:
+            return
         # Try stopping the database using their IPs instead of pod_ids
         stop_cmd = f"freenome-build db --host {conn_data1.host} stop-k8s"
         run_and_log(stop_cmd)
+        if conn_data2 is None:
+            return
         stop_cmd = f"freenome-build db --conn-string {conn_data2} stop-k8s"
         run_and_log(stop_cmd)
 
@@ -109,6 +118,8 @@ def test_k8s_db_cli():
 @pytest.mark.skipif('TRAVIS' in os.environ,
                     reason="This test is not run in Travis because there isn't a service account added yet")
 def test_k8s_db_interface():
+    pod_id1 = None
+    pod_id2 = None
     try:
         conn_data, pod_id1 = start_k8s_database(DB_DIR, 'freenome_build')
         # Start a second container and see if we can communicate with the original one.
@@ -120,7 +131,11 @@ def test_k8s_db_interface():
         conn_data.dbname = 'postgres'
         _test_k8s_connection(pod_id2, conn_data)
     finally:
+        if pod_id1 is None:
+            return
         stop_k8s_database(pod_id1)
+        if pod_id2 is None:
+            return
         stop_k8s_database(pod_id2)
 
 

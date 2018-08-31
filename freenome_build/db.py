@@ -205,7 +205,11 @@ def start_local_database(repo_path: str, project_name: str, dbname: str = None, 
     run_and_log(run_cmd)
 
     # Get the IP automatically
-    host = socket.gethostbyname(socket.gethostname())
+    try:
+        host = socket.gethostbyname(socket.gethostname())
+    except Exception:
+        # not everyone sets hostname, this is a good default
+        host = '127.0.0.1'
     # Wait for the db to start up before configuring it
     _wait_for_db_cluster_to_start(host, port)
 

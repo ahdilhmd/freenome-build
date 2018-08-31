@@ -20,10 +20,22 @@ Running `freenome-build develop $REPO_PATH` sets up a development environment fo
    - if a meta.taml file exists in `$REPO_PATH/meta.yaml` then use that as the package specification
    - if not, use `python setup.py bdist_conda` to build the conda package
 2) install the built packages' dependencies by running `conda install $PACKAGE --only-deps`
-3) install the package in python's develop mode by running `python $REPO_PATH/setup.py develop` 
+3) install the package in python's develop mode by running `python $REPO_PATH/setup.py develop`
 
 ## freenome-build deploy -u -p $REPO_PATH
 Build the package in $REPO_PATH and upload to anaconda cloud. The -u flag asks freenome-build to upload to anaconda cloud in addition to packaging.
+
+## Local installation
+
+You will need Sqitch and the sqitch_pg plugin, which can be installed by cpan
+(and is in Travis). If you are using a Mac, you might find the Homebrew install
+easier:
+
+```
+brew tap theory/sqitch
+brew install theory/sqitch/sqitch
+brew install theory/sqitch/sqitch_pg
+```
 
 
 ## Caveats, gotchas, and TODO's
