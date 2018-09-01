@@ -10,4 +10,4 @@ def test_get_version():
     assert vsn.count(b'.') == 2
     # want to test something about the version string - just fix the test if we
     # release version 3.
-    assert vsn[0] == '2'
+    assert chr(vsn[0]) == '2'
