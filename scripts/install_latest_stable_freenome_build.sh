@@ -13,36 +13,44 @@ else
 fi
 MINICONDA_INSTALL_PATH=$HOME/miniconda
 
-mkdir -p $MINICONDA_INSTALL_PATH;
-pushd $MINICONDA_INSTALL_PATH;
+mkdir -p $MINICONDA_INSTALL_PATH
 
-# check for conda install, and install if necessary
-CONDA_INSTALLED=1
-command -v conda >/dev/null 2>&1 || CONDA_INSTALLED=0
-if [[ $CONDA_INSTALLED -eq 0 ]]; then
-    # install conda
-    curl -sO $MINICONDA_URL;
-    bash $(basename $MINICONDA_URL) -b -u -p $MINICONDA_INSTALL_PATH;
-    # activate the base conda environment
-    export PATH="$MINICONDA_INSTALL_PATH/bin:$PATH";
-    source "$MINICONDA_INSTALL_PATH/etc/profile.d/conda.sh";
-    conda install anaconda-client --yes
-fi
+pushd $MINICONDA_INSTALL_PATH
+    # check for conda install, and install if necessary
+    CONDA_INSTALLED=1
+    command -v conda >/dev/null 2>&1 || CONDA_INSTALLED=0
+    if [[ $CONDA_INSTALLED -eq 0 ]]; then
+        # install conda
+        curl -sO $MINICONDA_URL;
+        bash $(basename $MINICONDA_URL) -b -u -p $MINICONDA_INSTALL_PATH;
+        # activate the base conda environment
+        export PATH="$MINICONDA_INSTALL_PATH/bin:$PATH";
+        source "$MINICONDA_INSTALL_PATH/etc/profile.d/conda.sh";
+        conda install anaconda-client --yes
+    fi
 
-# setup the condarc with the correct set of channels
-conda config --remove channels defaults || true
-conda config --add channels https://repo.anaconda.com/pkgs/pro/
-conda config --add channels https://repo.anaconda.com/pkgs/free/
-conda config --add channels https://repo.anaconda.com/pkgs/main/
-conda config --add channels conda-forge
-conda config --add channels bioconda
-conda config --add channels https://conda.anaconda.org/t/$ANACONDA_TOKEN/freenome
+    # setup the condarc with the correct set of channels
+    conda config --remove channels defaults || true
+    conda config --add channels https://repo.anaconda.com/pkgs/pro/
+    conda config --add channels https://repo.anaconda.com/pkgs/free/
+    conda config --add channels https://repo.anaconda.com/pkgs/main/
+    conda config --add channels conda-forge
+    conda config --add channels bioconda
+    conda config --add channels https://conda.anaconda.org/t/$ANACONDA_TOKEN/freenome
 
-# install freenome-build. If we are building a new tag, assume it's a good tag,
-# and use the build files on disk, instead of the latest stable install.
-# https://docs.travis-ci.com/user/environment-variables/
-[[ "${TRAVIS_TAG:-}" ]] || {
-    conda install freenome-build --yes
-}
-
-popd;
+    # install freenome-build. If we are building a new tag, assume it's a good
+    # tag, and use the build files on disk, instead of downloading the latest
+    # stable install. (If we push a bad install we can get in a situation where
+    # we're downloading the bad install and then can't ever use the bad install
+    # to update, which is bad).
+    #
+    # Travis env vars: https://docs.travis-ci.com/user/environment-variables/
+    if [[ "${TRAVIS_TAG:-}" ]]; then
+        conda install conda-build --yes
+        pushd "${TRAVIS_BUILD_DIR}"
+            python setup.py install
+        popd
+    else
+        conda install freenome-build --yes
+    fi
+popd
