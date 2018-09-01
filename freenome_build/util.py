@@ -118,7 +118,7 @@ def build_package_from_meta_yaml(path, version, skip_existing=False):
     # Set the environment variable VERSION so that
     # the jinja2 templating works for the conda-build
     local_env = os.environ
-    local_env['VERSION'] = version
+    local_env['VERSION'] = version.decode('utf-8')
 
     # build the package
     yaml_fpath = get_yaml_path(path)
