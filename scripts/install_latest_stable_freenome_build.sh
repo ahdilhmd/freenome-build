@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -eo pipefail
 
 ANACONDA_TOKEN=$1
 if [ $(uname) = 'Linux' ]; then
@@ -16,7 +16,7 @@ MINICONDA_INSTALL_PATH=$HOME/miniconda
 mkdir -p $MINICONDA_INSTALL_PATH;
 pushd $MINICONDA_INSTALL_PATH;
 
-# check for conda install, and install if neessary
+# check for conda install, and install if necessary
 CONDA_INSTALLED=1
 command -v conda >/dev/null 2>&1 || CONDA_INSTALLED=0
 if [[ $CONDA_INSTALLED -eq 0 ]]; then
@@ -38,7 +38,11 @@ conda config --add channels conda-forge
 conda config --add channels bioconda
 conda config --add channels https://conda.anaconda.org/t/$ANACONDA_TOKEN/freenome
 
-# install freenome-build
-conda install freenome-build --yes
+# install freenome-build. If we are building a new tag, assume it's a good tag,
+# and use the build files on disk, instead of the latest stable install.
+# https://docs.travis-ci.com/user/environment-variables/
+[[ "${TRAVIS_TAG:-}" ]] || {
+    conda install freenome-build --yes
+}
 
 popd;
