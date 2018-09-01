@@ -38,7 +38,8 @@ def version(path, repo_name=None):
 
 def get_version_from_setup_py(path):
     try:
-        return subprocess.check_output(["python", "setup.py", "--version"], cwd=path).strip()
+        vsn_bytes = subprocess.check_output(["python", "setup.py", "--version"], cwd=path).strip()
+        return vsn_bytes.decode('utf-8')
     except Exception:
         return None
 
