@@ -4,5 +4,6 @@ exclude =
     configs,
     docs,
     env,
+    venv,
     scripts
 max-line-length = 120

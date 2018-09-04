@@ -10,3 +10,6 @@ dist/
 build/
 *.egg
 *.egg-info/
+
+env/
+venv/
