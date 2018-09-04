@@ -1,3 +1,4 @@
+import pytest
 import tempfile
 from freenome_build.util import run_and_log
 
@@ -20,6 +21,7 @@ def test_run_and_log_with_file_input():
         run_and_log('cat', input=ofp)
 
 
+@pytest.mark.timeout(2)
 def test_run_and_log_lots_of_data():
     """ensure that we don't get a dead lock when there is lots of output"""
     with tempfile.NamedTemporaryFile() as ofp:

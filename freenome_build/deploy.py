@@ -1,8 +1,6 @@
 import os
-import sys
-import subprocess
 
-from freenome_build.util import build_package
+from freenome_build.util import build_package, run_and_log
 from freenome_build import version_utils
 
 LOCAL_CONDA_BUILD_SCRIPT = os.path.abspath('scripts/conda_build.sh')
@@ -28,7 +26,7 @@ def build_and_upload_package_from_repo(path='./', upload=True, skip_existing=Fal
         upload_cmd = ['anaconda', '-t', os.environ['ANACONDA_TOKEN'],
                       'upload', '--force', '-u', 'freenome', output_file_path]
 
-        subprocess.check_call(upload_cmd, stdout=sys.stdout, stderr=sys.stderr)
+        run_and_log(upload_cmd)
 
 
 def deploy_main(args):
