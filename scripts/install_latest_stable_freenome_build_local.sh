@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+PYTHON_VERSION=3.6
+
 isZsh() {
     if [ -n "$(ps -p "$$" | grep zsh)" ]; then
         return 0
@@ -48,6 +50,10 @@ else
 fi
 
 ANACONDA_TOKEN=$(anaconda auth --create --name $USER-admin-token)
+
+# create a local build environment
+conda create -n freenome_build_env --yes python=${PYTHON_VERSION} || true
+source activate freenome_build_env
 
 # setup the condarc with the correct set of channels
 conda config --remove channels defaults || true
