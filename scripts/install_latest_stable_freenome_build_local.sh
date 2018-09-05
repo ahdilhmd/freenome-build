@@ -58,7 +58,7 @@ fi
 ANACONDA_TOKEN=$(anaconda auth --create --name $USER-admin-token)
 
 # create a local build environment
-conda create -n $BUILD_ENV --yes python=${PYTHON_VERSION} || true
+conda create -n $BUILD_ENV --yes python=${PYTHON_VERSION}
 source activate $BUILD_ENV
 
 # setup the condarc with the correct set of channels

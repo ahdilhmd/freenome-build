@@ -36,7 +36,7 @@ pushd $MINICONDA_INSTALL_PATH
         conda install anaconda-client --yes
     fi
 
-    conda create -n $BUILD_ENV --yes python=${PYTHON_VERSION} || true
+    conda create -n $BUILD_ENV --yes python=${PYTHON_VERSION}
     source activate $BUILD_ENV
 
     # setup the condarc with the correct set of channels
