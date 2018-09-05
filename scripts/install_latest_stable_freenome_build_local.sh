@@ -90,4 +90,6 @@ conda activate
         " >> $RC_PATH
 fi
 
+source deactivate build_env
+
 popd;
