@@ -23,8 +23,7 @@ def build_and_upload_package_from_repo(path='./', upload=True, skip_existing=Fal
     output_file_path = build_package(path, version, skip_existing=skip_existing)
 
     if upload:
-        upload_cmd = ['anaconda', '-t', os.environ['ANACONDA_TOKEN'],
-                      'upload', '--force', '-u', 'freenome', output_file_path]
+        upload_cmd = f'anaconda -t {os.environ["ANACONDA_TOKEN"]} upload --force -u freenome {output_file_path}'
 
         run_and_log(upload_cmd)
 
