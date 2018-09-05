@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+PYTHON_VERSION=3.6
+
 set -eo pipefail
 
 ANACONDA_TOKEN=$1
@@ -29,6 +31,9 @@ pushd $MINICONDA_INSTALL_PATH
         conda install anaconda-client --yes
     fi
 
+    conda create -n freenome_build_env --yes python=${PYTHON_VERSION} || true
+    source activate freenome_build_env
+
     # setup the condarc with the correct set of channels
     conda config --remove channels defaults || true
     conda config --add channels https://repo.anaconda.com/pkgs/pro/
@@ -53,4 +58,6 @@ pushd $MINICONDA_INSTALL_PATH
     else
         conda install freenome-build --yes
     fi
+
+    source deactivate build_env
 popd
