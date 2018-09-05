@@ -34,7 +34,7 @@ branches:
   - "/v(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\\+[0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*)?/"
 deploy:
 - provider: script
-  script: freenome-build deploy -u
+  script: bash scripts/install_and_deploy.sh
   skip_cleanup: true
   on:
     tags: true
