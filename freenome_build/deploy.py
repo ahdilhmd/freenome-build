@@ -28,7 +28,7 @@ def build_and_upload_package_from_repo(path='./', upload=True, skip_existing=Fal
 
     if upload:
         upload_cmd = ['anaconda', '-t', os.environ['ANACONDA_TOKEN'],
-                      'upload', '--force', '-u']
+                      'upload', '--force', '-u', 'freenome']
 
         if package_name is not None:
             upload_cmd += ['--package', package_name]
@@ -36,7 +36,7 @@ def build_and_upload_package_from_repo(path='./', upload=True, skip_existing=Fal
         if all:
             upload_cmd += ['--all']
 
-        upload_cmd +=['freenome', output_file_path]
+        upload_cmd += [output_file_path]
 
         subprocess.check_call(upload_cmd, stdout=sys.stdout, stderr=sys.stderr)
 
