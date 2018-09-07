@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+PYTHON_VERSION=3.6
+ANACONDA_TOKEN=$1
+BUILD_ENV=$2
+
+if [ -a $BUILD_ENV ]; then
+    BUILD_ENV=freenome_build_env
+fi
+
+
 isZsh() {
     if [ -n "$(ps -p "$$" | grep zsh)" ]; then
         return 0
@@ -10,7 +19,6 @@ isZsh() {
 
 set -e
 
-ANACONDA_TOKEN=$1
 if [ $(uname) = 'Linux' ]; then
     MINICONDA_URL='https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh'
 elif [ $(uname) = 'Darwin' ]; then
@@ -49,6 +57,10 @@ fi
 
 ANACONDA_TOKEN=$(anaconda auth --create --name $USER-admin-token)
 
+# create a local build environment
+conda create -n $BUILD_ENV --yes python=${PYTHON_VERSION}
+source activate $BUILD_ENV
+
 # setup the condarc with the correct set of channels
 conda config --remove channels defaults || true
 conda config --add channels https://repo.anaconda.com/pkgs/pro/
@@ -83,5 +95,7 @@ export ANACONDA_TOKEN=$ANACONDA_TOKEN
 conda activate
         " >> $RC_PATH
 fi
+
+source deactivate $BUILD_ENV
 
 popd;
