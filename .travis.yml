@@ -20,8 +20,7 @@ services:
 - docker
 - postgresql
 install:
-- source scripts/install_latest_stable_freenome_build.sh $ANACONDA_TOKEN freenome_build_env
-- source activate freenome_build_env
+- source scripts/install_latest_stable_freenome_build.sh $ANACONDA_TOKEN
 - freenome-build develop .
 - sudo cpanm --quiet --notest App::Sqitch
 cache: pip
@@ -34,7 +33,7 @@ branches:
   - "/v(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\\+[0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*)?/"
 deploy:
 - provider: script
-  script: bash scripts/install_and_deploy.sh
+  script: freenome-build deploy -u
   skip_cleanup: true
   on:
     tags: true
