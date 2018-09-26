@@ -47,7 +47,7 @@ pushd $MINICONDA_INSTALL_PATH
     # Travis env vars: https://docs.travis-ci.com/user/environment-variables/
     if [[ "${TRAVIS_TAG:-}" ]]; then
         conda install conda-build --yes
-        pushd "${TRAVIS_BUILD_DIR}"
+        pushd "${TRAVIS_BUILD_DIR}/freenome-build"
             python setup.py install
         popd
     else
