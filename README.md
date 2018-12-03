@@ -33,8 +33,7 @@ easier:
 
 ```
 brew tap theory/sqitch
-brew install theory/sqitch/sqitch
-brew install theory/sqitch/sqitch_pg
+brew install theory/sqitch/sqitch --with-postgres-support   
 ```
 
 
