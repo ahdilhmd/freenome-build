@@ -56,6 +56,7 @@ conda config --add channels https://repo.anaconda.com/pkgs/free/
 conda config --add channels https://repo.anaconda.com/pkgs/main/
 conda config --add channels conda-forge
 conda config --add channels bioconda
+conda config --add channels r
 conda config --add channels https://conda.anaconda.org/t/$ANACONDA_TOKEN/freenome
 
 # install freenome-build
