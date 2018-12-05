@@ -139,7 +139,7 @@ def build_package_using_distutils(path):
         "python setup.py bdist_conda",
         shell=True, check=True, stdout=subprocess.PIPE
     )
-    upload_pat = "# \$ anaconda upload (\S+)$"
+    upload_pat = r"# \$ anaconda upload (\S+)$"
     build_output = proc.stdout.decode()
     for line in build_output.splitlines():
         res = re.findall(upload_pat, line)

@@ -229,7 +229,7 @@ def start_k8s_database(repo_path: str, project_name: str, dbname: str = None, us
     if kube_pod_config is None:
         kube_pod_config = norm_abs_join_path(
             os.path.dirname(__file__), "./database_template/db_pod_config.yaml")
-    kcreate_cmd = f"kubectl create -f {kube_pod_config} | sed 's/pod \"\|\" created//g'"
+    kcreate_cmd = f"kubectl create -f {kube_pod_config} | sed 's/pod \"\|\" created//g'"  # noqa: W605
     pod_id = subprocess.check_output(kcreate_cmd, shell=True).decode().strip()
 
     _wait_for_container(pod_id)
