@@ -162,7 +162,8 @@ def _remove_existing_container(container_name: str) -> None:
 
 
 def start_local_database(repo_path: str, project_name: str, dbname: str = None, user: str = None,
-                         port: int = None, password: str = None) -> DbConnectionData:
+                         port: int = None, password: str = None,
+                         max_wait_time: int = MAX_DB_WAIT_TIME) -> DbConnectionData:
     """Start a test database in a docker container.
 
     This starts a new test database in a docker container. This function:
@@ -211,7 +212,7 @@ def start_local_database(repo_path: str, project_name: str, dbname: str = None, 
         # not everyone sets hostname, this is a good default
         host = '127.0.0.1'
     # Wait for the db to start up before configuring it
-    _wait_for_db_cluster_to_start(host, port)
+    _wait_for_db_cluster_to_start(host, port, max_wait_time)
 
     conn_data = DbConnectionData(host, port, dbname, user, password)
 
