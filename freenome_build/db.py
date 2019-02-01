@@ -89,7 +89,7 @@ def _run_migrations(conn_data: DbConnectionData, repo_path: str) -> None:
     with change_directory(sqitch_path):
         try:
             run_and_log(
-                f"sqitch --engine pg deploy {conn_data.sqitch_string}")
+                f"sqitch deploy {conn_data.sqitch_string}")
         except subprocess.CalledProcessError as inst:
             # we don't care if there's nothing to deploy
             if inst.stderr.decode().strip() == 'Nothing to deploy (empty plan)':
