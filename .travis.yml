@@ -37,6 +37,16 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
+- provider: packagecloud
+  repository: python
+  username: freenome
+  token:
+    secure: KsrtgIu4qfvm3E2PHLwersTJBElqVxdCxQpkmDz/ofohBKBjOQz88uPHqNHmkJxnsNJFEWBW8CgHB4uDTJ6wRINMxwC8rN2F/E75QHc+37MVKeQTpbclWM2ZI7uN27tdll8MD7QwNFyLG++jZSQCq6gKtU/WH/M4p5pFbldQEMxV7iNRt68iO08CsNGi+8O90vZh14Vit0AywfmIJUQ0WLBxnV7gVJvEnBWvxnepwt0LQI3ZgoeRPiJUt9MbE4MHf0MyAhIpsPhuMJXtglRhMbj8EQzPEW89PWrLkgTY80vbwX85QzIoIgIQ054RCqefQFsmWmVxqdu6oGD6IhgWRx8T6xFt+bqoO2M/xjvye9TJGgwS5P13PVw9wfY1TTev/2kWJH0RhKVTysOTd6A5JnUbcrQOX701/QPypZGMYVsoY9F9sbVoU8cMDaAxeomyPwBzIq6HUoaZXBSKN6oPkdIfsfiV89to/o8Jsq1/AUjQjJx1VMqyPMnSJjxrKIpXJRRddppF2vXuwkW3VQpniI2+txZJmDlEmxcS19qIJREaJKKwalDbnB1sVHU1sCQ0jWp14vSRY65U0amWK33dRkfS/4AGfpNSCrU1otpPbvhZyu2z3mgLdk7uLpa16dLoh5FIdpzceET792JHZMeE1NKOjpSoOu0NWqV41hlxdwM=
+  on:
+    branch: master
+  dist: python
+  package_glob: dist/*.{whl,zip,egg,egg-info,tar,bz2,Z,gz}
+  skip_cleanup: true
 #- provider: pypi
 #  user: nboley
 #  password:
